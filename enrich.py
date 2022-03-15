@@ -11,7 +11,7 @@ from utils import data_utils as du
 # TO DO
 # argparse
 # pickle out?
-
+# USNO!
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process candidates metadata")
@@ -78,6 +78,16 @@ if __name__ == "__main__":
     df["gaia_eDR3_parallaxerr"] = plxerr
     df["gaia_eDR3_gmag"] = gmag
     df["gaia_eDR3_angdist"] = angdist
+
+    print("USNO-A.20 xmatch")
+    (source_usno, angdist_usno,) = xmatch.cross_match_usno(
+        df["index"].to_list(),
+        df["ra"].to_list(),
+        df["dec"].to_list(),
+        ctlg="vizier:I/252/out",
+    )
+    df["USNO_source"] = source_usno
+    df["USNO_angdist"] = angdist_usno
 
     # save cross-matched alerts
     os.makedirs(args.path_out, exist_ok=True)

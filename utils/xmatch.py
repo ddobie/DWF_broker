@@ -15,7 +15,7 @@ SIMBAD
 
 
 def generate_csv(s: str, lists: list) -> str:
-    """ Make a string (CSV formatted) given lists of data and header.
+    """Make a string (CSV formatted) given lists of data and header.
     Parameters
     ----------
     s: str
@@ -55,7 +55,7 @@ def refine_search(
     sptypes: list,
     redshift: list,
 ) -> list:
-    """ Create a final table by merging coordinates of objects found on the
+    """Create a final table by merging coordinates of objects found on the
     bibliographical database, with those objects which were not found.
     Parameters
     ----------
@@ -120,8 +120,8 @@ def refine_search(
 def xmatch(
     ra: list, dec: list, id: list, extcatalog: str = "simbad", distmaxarcsec: int = 1
 ) -> (list, list):
-    """ 
-    
+    """
+
     Build a catalog of (ra, dec, id) in a CSV-like string,
     cross-match with `extcatalog`, and decode the output.
     See http://cdsxmatch.u-strasbg.fr/ for more information.
@@ -174,7 +174,7 @@ def xmatch(
 
 
 def cross_match_alerts_raw_simbad(oid: list, ra: list, dec: list) -> list:
-    """ Query the CDSXmatch service to find identified objects
+    """Query the CDSXmatch service to find identified objects
     in alerts. The catalog queried is the SIMBAD bibliographical database.
     We can also use the 10,000+ VizieR tables if needed :-)
     Parameters
@@ -255,8 +255,7 @@ def cross_match_alerts_raw_simbad(oid: list, ra: list, dec: list) -> list:
 
 
 def cross_match_simbad(list_idx, list_ra, list_dec):
-    """ Cross-match list with SIMBAD
-    """
+    """Cross-match list with SIMBAD"""
     # xmatch better done in list (da,dec in deg)
     matches = cross_match_alerts_raw_simbad(list_idx, list_ra, list_dec)
     xmatch_simbad_redshift = np.transpose(matches)[-1]
@@ -288,7 +287,7 @@ def refine_search_gaia(
     gmag: list,
     angDist: list,
 ) -> list:
-    """ Create a final table by merging coordinates of objects found on the
+    """Create a final table by merging coordinates of objects found on the
     bibliographical database, with those objects which were not found.
     Parameters
     ----------
@@ -310,7 +309,7 @@ def refine_search_gaia(
         List of source g magnitude error returned by the xmatch with Gaia
     angDist: list of float
         List of source angular distance returned by the xmatch with Gaia
-    
+
     Returns
     ----------
     out: List of Tuple
@@ -368,7 +367,7 @@ def refine_search_gaia(
 
 
 def cross_match_alerts_raw_gaia(oid: list, ra: list, dec: list, ctlg: str) -> list:
-    """ Query the CDSXmatch service to find identified objects
+    """Query the CDSXmatch service to find identified objects
     in alerts. The catalog queried is the Gaia DR database.
     Parameters
     ----------
@@ -443,8 +442,7 @@ def cross_match_alerts_raw_gaia(oid: list, ra: list, dec: list, ctlg: str) -> li
 
 
 def cross_match_gaia(list_idx, list_ra, list_dec, ctlg="vizier:I/345/gaia2"):
-    """ Cross-match list with SIMBAD
-    """
+    """Cross-match list with SIMBAD"""
     # xmatch better done in list (da,dec in deg)
     matches = cross_match_alerts_raw_gaia(list_idx, list_ra, list_dec, ctlg)
 
@@ -460,4 +458,161 @@ def cross_match_gaia(list_idx, list_ra, list_dec, ctlg="vizier:I/345/gaia2"):
         xmatch_gaia_plxerr,
         xmatch_gaia_gmag,
         xmatch_gaia_angdist,
+    )
+
+
+"""USNO
+"""
+
+
+def refine_search_usno(
+    ra: list,
+    dec: list,
+    oid: list,
+    id_out: list,
+    source: list,
+    angDist: list,
+) -> list:
+    """Create a final table by merging coordinates of objects found on the
+    bibliographical database, with those objects which were not found.
+    Parameters
+    ----------
+    ra: list of float
+        List of RA
+    dec: list of float
+        List of Dec of the same size as ra.
+    oid: list of str
+        List of object ID (custom)
+    id_out: list of str
+        List of object ID returned by the xmatch with CDS
+    source: list of str
+        List of source ID returned by the xmatch with USNO
+    angDist: list of float
+        List of source angular distance returned by the xmatch with USNO
+
+    Returns
+    ----------
+    out: List of Tuple
+        Each tuple contains (objectId, ra, dec, source, angdist).
+        If the object is not found in Gaia, source, angdist
+        are marked as Unknown. In the case several objects match
+        the centroid of the alert, only the closest is returned.
+    """
+    out = []
+    for ra_in, dec_in, id_in in zip(ra, dec, oid):
+        # cast for picky Spark
+        ra_in, dec_in = float(ra_in), float(dec_in)
+        id_in = str(id_in)
+
+        # Discriminate with the objectID
+        if id_in in id_out:
+            # Return the closest object in case of many
+            # (smallest angular distance)
+            index = id_out.index(id_in)
+            source_tmp = source[index] if source[index] != "" else "Unknown"
+            angdist_tmp = angDist[index] if angDist[index] != "" else "Unknown"
+
+            out.append(
+                (
+                    id_in,
+                    ra_in,
+                    dec_in,
+                    source_tmp,
+                    angdist_tmp,
+                )
+            )
+
+        else:
+            # Mark as unknown if no match
+            out.append(
+                (
+                    id_in,
+                    ra_in,
+                    dec_in,
+                    "Unknown",
+                    "Unknown",
+                )
+            )
+
+    return out
+
+
+def cross_match_alerts_raw_usno(oid: list, ra: list, dec: list, ctlg: str) -> list:
+    """Query the CDSXmatch service to find identified objects
+    in alerts. The catalog queried is the USNO A2.0 database.
+    Parameters
+    ----------
+    oid: list of str
+        List containing object ids (custom)
+    ra: list of float
+        List containing object ra coordinates
+    dec: list of float
+        List containing object dec coordinates
+    dec: string
+        string with catalogue name
+    Returns
+    ----------
+    out: List of Tuple
+        Each tuple contains (objectId, ra, dec, sourcename ,angulardistance).
+        If the object is not found in usno, objectId, ra, dec, sourcename ,angulardistance
+        are marked as Unknown. In the case several objects match
+        the centroid of the alert, only the closest is returned.
+    Examples
+    ----------
+    >>> ra = [26.8566983, 26.24497]
+    >>> dec = [-26.9677112, -26.7569436]
+    >>> id = ["1", "2"]
+    >>> objects = cross_match_alerts_raw_usno(id, ra, dec)
+    """
+    if len(ra) == 0:
+        return []
+    # Catch TimeoutError and ConnectionError
+    try:
+        data, header = xmatch(ra, dec, oid, extcatalog=ctlg, distmaxarcsec=2)
+    except (ConnectionError, TimeoutError, ValueError) as ce:
+        logging.warning("XMATCH USNO failed " + repr(ce))
+        return []
+    # Sometimes the service is down, but without TimeoutError or ConnectionError
+    # In that case, we grab the error message from the data.
+    if len(data) > 0 and "504 Gateway Time-out" in data[0]:
+        msg_head = "CDS xmatch service probably down"
+        msg_foot = "Check at http://cdsxmatch.u-strasbg.fr/xmatch/api/v1/sync"
+        logging.warning(msg_head)
+        logging.warning(data[0])
+        logging.warning(msg_foot)
+        return []
+
+    # Fields of interest (their indices in the output)
+    if "USNO-A2.0" not in header:
+        return []
+
+    # Fields of interest (their indices in the output)
+    # sourcename, gmag, gmagerr, parallax,separation
+    oid_ind = header.index("objectId")
+    source_ind = header.index("USNO-A2.0")
+    angDist_ind = header.index("angDist")
+
+    # Get the objectId of matches
+    id_out = [np.array(i.split(","))[oid_ind] for i in data]
+
+    # Get the names of matches
+    source = [np.array(i.split(","))[source_ind] for i in data]
+    angDist = [np.array(i.split(","))[angDist_ind] for i in data]
+
+    out = refine_search_usno(ra, dec, oid, id_out, source, angDist)
+
+    return out
+
+
+def cross_match_usno(list_idx, list_ra, list_dec, ctlg="vizier:I/345/usno2"):
+    """Cross-match list with USNO A2.0 star catalogue"""
+    # xmatch better done in list (da,dec in deg)
+    matches = cross_match_alerts_raw_usno(list_idx, list_ra, list_dec, ctlg)
+
+    xmatch_usno_source = np.transpose(matches)[3]
+    xmatch_usno_angdist = np.transpose(matches)[4]
+
+    return (
+        xmatch_usno_source,
+        xmatch_usno_angdist,
     )
