@@ -51,33 +51,34 @@ if __name__ == "__main__":
     df["simbad_sptype"] = sptype
     df["simbad_redshift"] = z
 
-    # GAIA DR2
-    print("GAIA DR2 xmatch")
-    gaia_source, plx, plxerr, gmag, angdist = xmatch.cross_match_gaia(
+    df_gaia = xmatch.cross_match_alerts_raw_generic(
         df["index"].to_list(),
         df["ra"].to_list(),
         df["dec"].to_list(),
-        ctlg="vizier:I/345/gaia2",
+        ctlg="vizier:I/355/gaiadr3",
+        distmaxarcsec=2,
+        columns_to_keep=[
+            "DR3Name",
+            "RAdeg",
+            "DEdeg",
+            "Plx",
+            "e_Plx",
+            "Gmag",
+            "e_Gmag",
+            "angDist",
+        ],
     )
-    df["gaia_DR2_source"] = gaia_source
-    df["gaia_DR2_parallax"] = plx
-    df["gaia_DR2_parallaxerr"] = plxerr
-    df["gaia_DR2_gmag"] = gmag
-    df["gaia_DR2_angdist"] = angdist
+    df_gaia = df_gaia.rename(
+        columns={
+            col: col + "_gaiaDR3"
+            for col in df_gaia.columns
+            if col not in ["objectId", "ra", "dec"]
+        }
+    )
+    df_gaia["index"] = df_gaia["objectId"]
+    df_gaia["index"] = df_gaia["index"].astype(int)
 
-    # GAIA eDR3
-    print("GAIA eDR3 xmatch")
-    gaia_source, plx, plxerr, gmag, angdist = xmatch.cross_match_gaia(
-        df["index"].to_list(),
-        df["ra"].to_list(),
-        df["dec"].to_list(),
-        ctlg="vizier:I/350/gaiaedr3",
-    )
-    df["gaia_eDR3_source"] = gaia_source
-    df["gaia_eDR3_parallax"] = plx
-    df["gaia_eDR3_parallaxerr"] = plxerr
-    df["gaia_eDR3_gmag"] = gmag
-    df["gaia_eDR3_angdist"] = angdist
+    df = pd.merge(df, df_gaia, on=["index", "ra", "dec"], how="left")
 
     print("USNO-A.20 xmatch")
     (source_usno, angdist_usno,) = xmatch.cross_match_usno(
