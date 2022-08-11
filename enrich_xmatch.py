@@ -8,10 +8,6 @@ import pandas as pd
 from utils import xmatch
 from utils import data_utils as du
 
-# TO DO
-# argparse
-# pickle out?
-# USNO!
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process candidates metadata")
@@ -26,7 +22,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--outname",
-        default="./transients_coo_enriched",
+        default="transients_coo_enriched",
         help="Output name enriched metadata (no extension)",
     )
 
@@ -38,12 +34,12 @@ if __name__ == "__main__":
     df = du.read_mary_masterlist(args.fname)
     if args.test:
         df = df[:10]
-    print(f"Processing {args.fname}: {len(df)} candidates")
+    print(f"Processing {len(df)} candidates from {args.fname}")
 
     # SIMBAD
     print("SIMBAD xmatch")
     z, sptype, typ, ctlg = xmatch.cross_match_simbad(
-        df["index"].to_list(), df["ra"].to_list(), df["dec"].to_list(),
+        df["objectId"].to_list(), df["ra"].to_list(), df["dec"].to_list(),
     )
     # save in df
     df["simbad_type"] = typ
@@ -52,7 +48,7 @@ if __name__ == "__main__":
     df["simbad_redshift"] = z
 
     df_gaia = xmatch.cross_match_alerts_raw_generic(
-        df["index"].to_list(),
+        df["objectId"].to_list(),
         df["ra"].to_list(),
         df["dec"].to_list(),
         ctlg="vizier:I/355/gaiadr3",
@@ -70,19 +66,18 @@ if __name__ == "__main__":
     )
     df_gaia = df_gaia.rename(
         columns={
-            col: col + "_gaiaDR3"
+            col: "GaiaDR3_" + col
             for col in df_gaia.columns
             if col not in ["objectId", "ra", "dec"]
         }
     )
-    df_gaia["index"] = df_gaia["objectId"]
-    df_gaia["index"] = df_gaia["index"].astype(int)
+    df_gaia["objectId"] = df_gaia["objectId"].astype(int)
 
-    df = pd.merge(df, df_gaia, on=["index", "ra", "dec"], how="left")
+    df = pd.merge(df, df_gaia, on=["objectId", "ra", "dec"], how="left")
 
     print("USNO-A.20 xmatch")
     (source_usno, angdist_usno,) = xmatch.cross_match_usno(
-        df["index"].to_list(),
+        df["objectId"].to_list(),
         df["ra"].to_list(),
         df["dec"].to_list(),
         ctlg="vizier:I/252/out",

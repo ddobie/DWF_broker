@@ -16,7 +16,7 @@ def read_mary_masterlist(fname):
     # reformatting
     df_tmp = df_tmp.rename(
         columns={
-            "col1": "index",
+            "col1": "objectId",
             "col2": "ra",
             "col3": "dec",
             "col4": "field",
