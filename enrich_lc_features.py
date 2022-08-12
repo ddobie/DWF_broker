@@ -23,8 +23,8 @@ def get_one_lc_slopes(df, timerange=0, verbose=False, sanity_plots=False):
     else:
         df_sel = df
 
-    df_sel_new = df_sel[int(len(df) / 2) :]
-    df_sel_old = df_sel[: int(len(df) / 2)]
+    df_sel_new = df_sel[int(len(df_sel) / 2) :]
+    df_sel_old = df_sel[: int(len(df_sel) / 2)]
 
     dic_out["mad_slope"] = df_sel_new["m"].median() - df_sel_old["m"].median()
 
@@ -96,5 +96,11 @@ if __name__ == "__main__":
 
     df = pd.read_csv(args.fname, index_col=False, delimiter=" ")
 
+    # for all days available
     dic_out = get_one_lc_slopes(df, verbose=True)
 
+    # for the last  day
+    dic_out_2days = get_one_lc_slopes(df, verbose=True, timerange=1)
+
+    # for the last 2 days
+    dic_out_2days = get_one_lc_slopes(df, verbose=True, timerange=2)
