@@ -504,7 +504,9 @@ def cross_match_alerts_raw_generic(
         df_out["dec"] = df_out["dec"].astype(float)
 
         if len(columns_to_keep) < 1:
-            columns_to_keep = df_out.keys().to_list()
+            columns_to_keep = [
+                k for k in df_out.keys().to_list() if k not in ["ra", "dec", "objectId"]
+            ]
 
         return df_out[["objectId", "ra", "dec"] + columns_to_keep]
 
