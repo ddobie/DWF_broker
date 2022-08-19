@@ -471,7 +471,7 @@ def cross_match_alerts_raw_generic(
     df_out_tmp["dec"] = dec
 
     if len(data) == 0:
-        print("No match found")
+        print(f"No match found {ctlg}")
         return df_out_tmp
 
     data = [x.split(",") for x in data]
@@ -481,7 +481,14 @@ def cross_match_alerts_raw_generic(
         raise Exception
     else:
         df_search_out["angDist"] = df_search_out["angDist"].astype(float)
-        df_search_out = df_search_out.rename(columns={"objectId": "idx_to_match"})
+        if "objectId" in df_search_out.keys().to_list():
+            df_search_out = df_search_out.rename(columns={"objectId": "idx_to_match"})
+        elif "index" in df_search_out.keys().to_list():
+            df_search_out = df_search_out.rename(columns={"index": "idx_to_match"})
+        else:
+            print(f"Find name of cross-match catalogue index column {ctlg}")
+            raise ValueError
+
         df_search_out_tmp = df_search_out.sort_values("angDist", ascending=True)
         df_search_out_tmp = df_search_out_tmp.groupby("idx_to_match").first()
         df_search_out_tmp = df_search_out_tmp.rename(
