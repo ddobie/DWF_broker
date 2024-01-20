@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # is a known variable object
     df_sel = df_sel.query("GaiaDR3_VarFlag != 'VARIABLE'")
 
-    fname_out = f"{args.path_out}{args.nameout}"
+    fname_out = f"{args.path_out}/{args.nameout}"
     df_sel.to_csv(fname_out)
     print(f"Saved filtered {len(df_sel)} candidates in {fname_out}")
 
