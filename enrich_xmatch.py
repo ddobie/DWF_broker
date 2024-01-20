@@ -62,6 +62,7 @@ if __name__ == "__main__":
             "Gmag",
             "e_Gmag",
             "angDist",
+            "VarFlag"
         ],
     )
     df_gaia = df_gaia.rename(

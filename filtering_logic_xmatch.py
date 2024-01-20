@@ -88,8 +88,13 @@ if __name__ == "__main__":
 
     # "Basic cut"
     df_sel = df[cut_simbad & cut_usno & cut_gaia]
+    
+    # Remove anything with a gaia variability flag - this will catch anything
+    # that doesn't have a measured parallax for whatever reason, but 
+    # is a known variable object
+    df_sel = df_sel.query("GaiaDR3_VarFlag != 'VARIABLE'")
 
-    fname_out = f"{args.path_out}{args.nameout}"
+    fname_out = f"{args.path_out}/{args.nameout}"
     df_sel.to_csv(fname_out)
     print(f"Saved filtered {len(df_sel)} candidates in {fname_out}")
 
